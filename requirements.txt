@@ -1,0 +1,18 @@
+# Core dependencies
+pandas>=1.5.0
+openpyxl>=3.0.0
+xlrd>=2.0.0
+
+# Optional translation services
+# google-cloud-translate>=3.0.0  # Uncomment for Google Translate
+# deepltr>=1.0.0                # Uncomment for DeepL
+
+# Development dependencies
+pytest>=7.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=1.0.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0 

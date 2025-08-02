@@ -3,9 +3,10 @@
 Main entry point for the multimarketplace upload system.
 
 This script provides a command-line interface for the main operations:
-- Header extraction
+- MVP template creation
 - Sample data generation
 - Template transformation
+- DeepL translation management
 """
 
 import sys
@@ -16,7 +17,6 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.core.extractor import HeaderExtractor
 from src.core.transformer import MultimarketplaceTransformer
 from src.config.settings import ensure_directories_exist, get_template_file_path
 from src.config.platforms import get_all_platforms, get_platform_config
@@ -27,36 +27,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-def extract_headers():
-    """Extract headers from marketplace files."""
-    print("🚀 Starting header extraction process...")
-    print("=" * 60)
-    
-    ensure_directories_exist()
-    extractor = HeaderExtractor()
-    success = extractor.run_extraction()
-    
-    if success:
-        summary = extractor.get_extraction_summary()
-        print("\n" + "=" * 60)
-        print("📊 Extraction Summary:")
-        print("=" * 60)
-        print(f"✅ Total platforms processed: {summary['total_platforms']}")
-        print(f"✅ Total unique headers: {summary['total_unique_headers']}")
-        print(f"✅ Platforms: {', '.join(summary['platforms_processed'])}")
-        print("\nHeaders per platform:")
-        for platform, count in summary['headers_per_platform'].items():
-            print(f"   • {platform}: {count} headers")
-    else:
-        print("\n❌ Header extraction failed.")
-
 def generate_sample_data():
     """Generate sample data for testing."""
     print("🎯 Generating sample product data...")
     print("=" * 60)
     
     # Import here to avoid circular imports
-    from src.scripts.generate_sample_data import create_sample_template
+    from tests.generate_sample_data import create_sample_template
     
     sample_file = create_sample_template()
     
@@ -83,7 +60,7 @@ def transform_template():
     
     if not template_file.exists():
         print(f"❌ Template file not found: {template_file}")
-        print("Please run header extraction first to create the template.")
+        print("Please create an MVP template first using: python main.py create-mvp")
         return
     
     transformer = MultimarketplaceTransformer()
@@ -121,62 +98,7 @@ def list_platforms():
             print(f"     - Image fields: {len(config.image_fields)}")
             print()
 
-def optimize_template():
-    """Optimize template to XLSX format with color coding."""
-    print("🎯 Starting template optimization...")
-    print("=" * 60)
-    
-    # Import here to avoid circular imports
-    from src.utils.template_optimizer import optimize_master_template
-    from src.config.client_config import list_available_clients
-    
-    # Show available clients
-    clients = list_available_clients()
-    print(f"Available clients: {', '.join(clients)}")
-    print(f"Using default client: Nordic Acoustics")
-    
-    success = optimize_master_template('Nordic Acoustics')
-    
-    if success:
-        print("\n" + "=" * 60)
-        print("✅ Template Optimization Summary:")
-        print("=" * 60)
-        print("✅ Converted CSV to XLSX format")
-        print("✅ Restructured columns in logical order")
-        print("✅ Applied color coding:")
-        print("   • 🔴 Red: Required fields (Category Code, EAN, Code for internal use, etc.)")
-        print("   • 🟢 Green: Automated fields (client-specific brands, translations, additional images)")
-        print("   • 🟡 Yellow: Optional fields (remaining columns)")
-        print("✅ Auto-adjusted column widths")
-        print("✅ Made template easier for manual data entry")
-        
-        print("\n📝 Next Steps:")
-        print("1. Open the optimized XLSX template")
-        print("2. Fill in the required fields (red columns)")
-        print("3. Add optional data as needed (yellow columns)")
-        print("4. Save and use for transformation")
-    else:
-        print("\n❌ Template optimization failed. Check the error messages above.")
-
-def analyze_fields():
-    """Analyze fields and dropdowns across all input files."""
-    print("🔍 Starting comprehensive field analysis...")
-    print("=" * 60)
-    
-    # Import here to avoid circular imports
-    from src.scripts.analyze_fields import FieldAnalyzer
-    
-    ensure_directories_exist()
-    
-    # Create analyzer and run analysis
-    analyzer = FieldAnalyzer()
-    results = analyzer.analyze_all_files()
-    
-    # Save results
-    analyzer.save_results()
-    
-    # Print summary
-    analyzer.print_summary()
+# Removed optimize_template and analyze_fields functions for simplicity
 
 def deepl_setup():
     """Set up DeepL API key."""
@@ -239,41 +161,35 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py extract-headers     # Extract headers from marketplace files
-  python main.py generate-sample     # Generate sample data for testing
-  python main.py optimize-template   # Optimize template to XLSX with color coding
   python main.py create-mvp          # Create MVP template with minimum fields
+  python main.py generate-sample     # Generate sample data for testing
   python main.py transform           # Transform template to platform files
   python main.py list-platforms      # List all supported platforms
   python main.py validate            # Validate template for all platforms
-  python main.py analyze-fields      # Analyze fields and dropdowns across input files
+  python main.py deepl-setup         # Setup DeepL API key
+  python main.py deepl-usage         # Check DeepL usage
+  python main.py deepl-test          # Test DeepL translation
         """
     )
     
     parser.add_argument(
         'command',
-        choices=['extract-headers', 'generate-sample', 'optimize-template', 'create-mvp', 'transform', 'list-platforms', 'validate', 'analyze-fields', 'deepl-setup', 'deepl-usage', 'deepl-test'],
+        choices=['create-mvp', 'generate-sample', 'transform', 'list-platforms', 'validate', 'deepl-setup', 'deepl-usage', 'deepl-test'],
         help='Command to execute'
     )
     
     args = parser.parse_args()
     
-    if args.command == 'extract-headers':
-        extract_headers()
+    if args.command == 'create-mvp':
+        create_mvp_template()
     elif args.command == 'generate-sample':
         generate_sample_data()
-    elif args.command == 'create-mvp':
-        create_mvp_template()
     elif args.command == 'transform':
         transform_template()
     elif args.command == 'list-platforms':
         list_platforms()
-    elif args.command == 'optimize-template':
-        optimize_template()
     elif args.command == 'validate':
         validate_template()
-    elif args.command == 'analyze-fields':
-        analyze_fields()
     elif args.command == 'deepl-setup':
         deepl_setup()
     elif args.command == 'deepl-usage':

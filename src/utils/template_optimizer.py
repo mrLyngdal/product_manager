@@ -20,7 +20,7 @@ import logging
 
 from ..config.settings import get_template_file_path, TEMPLATES_DIR
 from ..config.field_mappings import get_all_dropdown_fields, get_dropdown_values, is_dropdown_field, is_auto_filled_field
-from ..config.client_config import get_client_config
+# Client configuration removed for simplicity
 
 logger = logging.getLogger(__name__)
 
@@ -209,10 +209,10 @@ COLUMN_ORDER = [
 class TemplateOptimizer:
     """Optimizes the master template for better usability."""
     
-    def __init__(self, client_name: str = 'Nordic Acoustics'):
+    def __init__(self):
         self.workbook = None
         self.worksheet = None
-        self.client_config = get_client_config(client_name)
+        # Simplified without client configuration
     
     def load_csv_template(self) -> pd.DataFrame:
         """Load the existing CSV template."""
@@ -353,12 +353,9 @@ class TemplateOptimizer:
                     logger.warning(f"No dropdown values found for field '{column_name}'")
     
     def create_sample_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Add sample data to the template with client-specific brand names."""
+        """Add sample data to the template."""
         # Create sample rows
         sample_data = []
-        
-        # Get client-specific brand names
-        brand_mappings = self.client_config.get_all_brand_mappings()
         
         # Sample product 1
         sample_row = {}
@@ -368,12 +365,11 @@ class TemplateOptimizer:
             elif 'EAN' in col:
                 sample_row[col] = '1234567890123'
             elif 'Brand Name' in col:
-                sample_row[col] = brand_mappings.get('Maxeda_BE', 'Nordic Acoustics')
+                sample_row[col] = 'Nordic Acoustics'
             elif 'Manufacturer Name' in col:
-                sample_row[col] = brand_mappings.get('Castorama_FR', 'Nordic Acoustics')
+                sample_row[col] = 'Nordic Acoustics'
             elif 'Brand' in col and 'Brand Name' not in col and 'Manufacturer Name' not in col:
-                # Auto-fill brand field with client-specific brand
-                sample_row[col] = brand_mappings.get('LM_product', 'NORDIC ACOUSTICS')
+                sample_row[col] = 'NORDIC ACOUSTICS'
             elif 'Code for internal use' in col:
                 sample_row[col] = 'FLOOR-001'
             elif 'Product Title (Mirakl)' in col:
@@ -410,7 +406,7 @@ class TemplateOptimizer:
         # Create DataFrame with sample data
         sample_df = pd.DataFrame(sample_data)
         
-        logger.info(f"Added sample data with client-specific brand names for {self.client_config.get_client_name()}")
+        logger.info("Added sample data with default brand names")
         return sample_df
     
     def optimize_template(self) -> bool:
@@ -443,9 +439,9 @@ class TemplateOptimizer:
             logger.error(f"Error optimizing template: {e}")
             return False
 
-def optimize_master_template(client_name: str = 'Nordic Acoustics'):
+def optimize_master_template():
     """Main function to optimize the master template."""
-    optimizer = TemplateOptimizer(client_name)
+    optimizer = TemplateOptimizer()
     return optimizer.optimize_template()
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ This module handles:
 """
 
 import pandas as pd
-from typing import Optional
+from typing import Optional, Dict
 import logging
 
 from ..config.settings import TRANSLATION_PLACEHOLDER_PREFIX
@@ -188,28 +188,90 @@ class GoogleTranslateService(TranslationService):
             return translate_content(text, target_language)
 
 class DeepLService(TranslationService):
-    """DeepL API integration."""
+    """DeepL API integration with usage tracking."""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        super().__init__(api_key)
+        from ..config.deepl_config import DeepLUsageTracker, DEEPL_CONFIG
+        self.usage_tracker = DeepLUsageTracker()
+        self.config = DEEPL_CONFIG
     
     def translate(self, text: str, target_language: str, source_language: Optional[str] = None) -> str:
         """
-        Translate using DeepL API.
+        Translate using DeepL API with usage tracking.
         
-        Requires: pip install deepltr
+        Args:
+            text: Text to translate
+            target_language: Target language code (e.g., 'FR', 'NL', 'PL')
+            source_language: Source language code (optional)
+        
+        Returns:
+            Translated text or placeholder if limits exceeded
         """
+        if not self.api_key:
+            logger.warning("No DeepL API key provided")
+            return translate_content(text, target_language)
+        
+        # Check if translation is allowed within limits
+        text_length = len(text)
+        if not self.usage_tracker.can_translate(text_length):
+            logger.warning(f"Translation skipped due to usage limits: {text_length} chars")
+            return translate_content(text, target_language)
+        
         try:
-            import deepltr
+            import requests
             
-            translator = deepltr.DeepLTR(self.api_key)
-            result = translator.translate(
-                text,
-                target_lang=target_language.upper(),
-                source_lang=source_language.upper() if source_language else None
+            # Prepare request
+            headers = {
+                'Authorization': f'DeepL-Auth-Key {self.api_key}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+            
+            data = {
+                'text': text,
+                'target_lang': target_language.upper()
+            }
+            
+            if source_language:
+                data['source_lang'] = source_language.upper()
+            
+            # Make API request
+            response = requests.post(
+                self.config['api_url'],
+                headers=headers,
+                data=data,
+                timeout=self.config['timeout']
             )
             
-            return result
+            if response.status_code == 200:
+                result = response.json()
+                translated_text = result['translations'][0]['text']
+                
+                # Record usage
+                self.usage_tracker.record_translation(text_length)
+                
+                logger.info(f"DeepL translation successful: {text[:50]}... -> {translated_text[:50]}...")
+                return translated_text
+                
+            elif response.status_code == 456:
+                logger.error("DeepL quota exceeded")
+                return translate_content(text, target_language)
+                
+            else:
+                logger.error(f"DeepL API error: {response.status_code} - {response.text}")
+                return translate_content(text, target_language)
+                
         except ImportError:
-            logger.error("DeepL API not available. Install with: pip install deepltr")
+            logger.error("Requests library not available. Install with: pip install requests")
             return translate_content(text, target_language)
         except Exception as e:
-            logger.error(f"DeepL error: {e}")
-            return translate_content(text, target_language) 
+            logger.error(f"DeepL translation error: {e}")
+            return translate_content(text, target_language)
+    
+    def get_usage_summary(self) -> Dict:
+        """Get current usage summary."""
+        return self.usage_tracker.get_usage_summary()
+    
+    def can_translate(self, text_length: int) -> bool:
+        """Check if translation is allowed within limits."""
+        return self.usage_tracker.can_translate(text_length) 

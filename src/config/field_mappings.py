@@ -298,11 +298,33 @@ FIELD_TYPE_MAPPINGS = {
     'Name': 'free_text'
 }
 
+# Unified fields configuration
+UNIFIED_FIELDS = {
+    'Colour': ['Colour', 'Main Color'],
+}
+
+def get_unified_field(field_name: str) -> str:
+    """Return the unified field name for a given field (e.g., 'Main Color' -> 'Colour')."""
+    for unified, variants in UNIFIED_FIELDS.items():
+        if field_name in variants or field_name == unified:
+            return unified
+    return field_name
+
+# Update get_field_mapping to use unified field logic
 def get_field_mapping(field_name: str, source_platform: str, target_platform: str) -> str:
-    """Get the mapped field name between platforms."""
+    """Get the mapped field name between platforms, using unified fields."""
     normalized_name = field_name.lower().strip()
-    
-    # Check each field category
+    # First, check unified fields
+    for unified, variants in UNIFIED_FIELDS.items():
+        if field_name == unified or field_name in variants:
+            # Always use the unified field in the master template
+            if target_platform == 'master_template':
+                return unified
+            # Map to the correct field for the target platform
+            for category, mappings in FIELD_NAME_MAPPINGS.items():
+                if target_platform in mappings and unified == mappings['master_template']:
+                    return mappings.get(target_platform, unified)
+    # Fallback to original logic
     for category, mappings in FIELD_NAME_MAPPINGS.items():
         if source_platform in mappings and target_platform in mappings:
             source_field = mappings[source_platform]

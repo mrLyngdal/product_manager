@@ -177,13 +177,26 @@ def analyze_fields():
     
     # Print summary
     analyzer.print_summary()
-    
-    print("\n✅ Field analysis completed successfully!")
-    print("📝 Next steps:")
-    print("1. Review analysis_results.json for detailed findings")
-    print("2. Create field mapping configurations")
-    print("3. Implement dropdown standardization")
-    print("4. Update template optimizer with dropdown support")
+
+def deepl_setup():
+    """Set up DeepL API key."""
+    from src.scripts.manage_deepl import setup_api_key
+    setup_api_key()
+
+def deepl_usage():
+    """Check DeepL usage."""
+    from src.scripts.manage_deepl import check_usage
+    check_usage()
+
+def deepl_test():
+    """Test DeepL translation."""
+    from src.scripts.manage_deepl import test_translation
+    test_translation()
+
+def create_mvp_template():
+    """Create an MVP template with minimum required fields."""
+    from src.scripts.create_mvp_template import create_mvp_template
+    return create_mvp_template()
 
 def validate_template():
     """Validate template for all platforms."""
@@ -229,6 +242,7 @@ Examples:
   python main.py extract-headers     # Extract headers from marketplace files
   python main.py generate-sample     # Generate sample data for testing
   python main.py optimize-template   # Optimize template to XLSX with color coding
+  python main.py create-mvp          # Create MVP template with minimum fields
   python main.py transform           # Transform template to platform files
   python main.py list-platforms      # List all supported platforms
   python main.py validate            # Validate template for all platforms
@@ -238,7 +252,7 @@ Examples:
     
     parser.add_argument(
         'command',
-        choices=['extract-headers', 'generate-sample', 'optimize-template', 'transform', 'list-platforms', 'validate', 'analyze-fields'],
+        choices=['extract-headers', 'generate-sample', 'optimize-template', 'create-mvp', 'transform', 'list-platforms', 'validate', 'analyze-fields', 'deepl-setup', 'deepl-usage', 'deepl-test'],
         help='Command to execute'
     )
     
@@ -248,6 +262,8 @@ Examples:
         extract_headers()
     elif args.command == 'generate-sample':
         generate_sample_data()
+    elif args.command == 'create-mvp':
+        create_mvp_template()
     elif args.command == 'transform':
         transform_template()
     elif args.command == 'list-platforms':
@@ -258,6 +274,12 @@ Examples:
         validate_template()
     elif args.command == 'analyze-fields':
         analyze_fields()
+    elif args.command == 'deepl-setup':
+        deepl_setup()
+    elif args.command == 'deepl-usage':
+        deepl_usage()
+    elif args.command == 'deepl-test':
+        deepl_test()
 
 if __name__ == "__main__":
     main() 

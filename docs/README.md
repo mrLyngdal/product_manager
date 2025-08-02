@@ -1,49 +1,82 @@
-# Multimarketplace Upload System
+# 🚀 Multimarketplace Upload System
 
-A comprehensive solution for managing product uploads across multiple marketplace platforms with automated translation and transformation capabilities.
-
-## 🎯 Overview
-
-This system creates a unified master template that consolidates all unique column headers from multiple marketplace upload files. Once populated, it can automatically generate platform-specific upload files with appropriate translations and formatting.
+A comprehensive, modular solution for managing product uploads across multiple marketplace platforms with automated translation and transformation capabilities.
 
 ## 📁 Project Structure
 
 ```
 product_manager/
-├── 📄 extract_headers.py                    # Extracts headers from Excel files
-├── 📄 generate_sample_data.py              # Creates sample product data
-├── 📄 transform_pipeline.py                # Main transformation engine
-├── 📄 multimarketplace_master_template.csv # Master template (269 columns)
-├── 📄 sample_master_template.csv           # Sample populated template
-├── 📄 template_summary.md                  # Template analysis
-├── 📄 README.md                           # This documentation
-└── 📁 Generated Files/
-    ├── Castorama_FR_generated.xlsx
-    ├── Castorama_PL_generated.xlsx
-    ├── LM_product_generated.xlsx
-    ├── Maxeda_BE_generated.xlsx
-    └── Maxeda_NL_generated.xlsx
+├── 📁 src/                          # Source code
+│   ├── 📁 core/                     # Core functionality
+│   │   ├── extractor.py            # Header extraction logic
+│   │   ├── transformer.py          # Transformation pipeline
+│   │   └── validator.py            # Validation logic
+│   ├── 📁 config/                   # Configuration files
+│   │   ├── platforms.py            # Platform configurations
+│   │   └── settings.py             # Global settings
+│   ├── 📁 utils/                    # Utility functions
+│   │   ├── file_utils.py           # File handling utilities
+│   │   └── translation.py          # Translation utilities
+│   └── 📁 scripts/                  # Executable scripts
+│       ├── extract_headers.py      # Header extraction script
+│       ├── generate_sample_data.py # Sample data generator
+│       └── transform_pipeline.py   # Main transformation script
+├── 📁 data/                         # Data files
+│   ├── 📁 input/                    # Original marketplace files
+│   ├── 📁 templates/                # Template files
+│   └── 📁 output/                   # Generated files
+├── 📁 docs/                         # Documentation
+├── 📁 tests/                        # Test files
+├── 📁 examples/                     # Example files
+├── requirements.txt                 # Python dependencies
+├── setup.py                        # Package setup
+└── main.py                         # Main entry point
 ```
 
 ## 🚀 Quick Start
 
-### 1. Extract Headers from Original Files
-```bash
-python extract_headers.py
-```
-This creates `multimarketplace_master_template.csv` with all 269 unique columns.
+### 1. Installation
 
-### 2. Generate Sample Data (Optional)
 ```bash
-python generate_sample_data.py
-```
-This creates `sample_master_template.csv` with 5 sample products for testing.
+# Clone the repository
+git clone <repository-url>
+cd product_manager
 
-### 3. Run Transformation Pipeline
-```bash
-python transform_pipeline.py
+# Install dependencies
+pip install -r requirements.txt
 ```
-This generates platform-specific Excel files from the master template.
+
+### 2. Basic Usage
+
+```bash
+# Extract headers from marketplace files
+python main.py extract-headers
+
+# Generate sample data for testing
+python main.py generate-sample
+
+# Optimize template to XLSX with color coding
+python main.py optimize-template
+
+# Transform template to platform-specific files
+python main.py transform
+
+# List all supported platforms
+python main.py list-platforms
+
+# Validate template for all platforms
+python main.py validate
+```
+
+### 3. Advanced Usage
+
+```bash
+# Run individual scripts
+python src/scripts/extract_headers.py
+python src/scripts/transform_pipeline.py
+python src/scripts/generate_sample_data.py
+python src/scripts/optimize_template.py
+```
 
 ## 📊 Supported Marketplaces
 
@@ -55,39 +88,52 @@ This generates platform-specific Excel files from the master template.
 | Maxeda BE | French (BE) | Product Title (fr_BE), Description (fr_BE) | `Maxeda_BE_generated.xlsx` |
 | Maxeda NL | Dutch | Product Title (nl_NL), Description (nl_NL) | `Maxeda_NL_generated.xlsx` |
 
-## 🔧 System Components
+## 🔧 System Architecture
 
-### 1. Header Extraction (`extract_headers.py`)
-- **Purpose**: Analyzes original marketplace files to extract all unique column headers
-- **Input**: 5 Excel files from different marketplaces
-- **Output**: Unified CSV template with 269 columns
-- **Features**:
-  - Preserves original column names and formatting
-  - Eliminates duplicates
-  - UTF-8 encoding
-  - CSV format for compatibility
+### Core Modules (`src/core/`)
 
-### 2. Sample Data Generator (`generate_sample_data.py`)
-- **Purpose**: Creates realistic sample product data for testing
-- **Features**:
-  - 5 sample products across different categories
-  - Complete field population
-  - Realistic product specifications
-  - Image URL placeholders
-  - Multilingual content preparation
+#### `extractor.py`
+- **HeaderExtractor**: Extracts and consolidates headers from marketplace files
+- **Methods**: `extract_headers_from_excel()`, `consolidate_headers()`, `create_master_template()`
 
-### 3. Transformation Pipeline (`transform_pipeline.py`)
-- **Purpose**: Converts master template into platform-specific files
-- **Features**:
-  - Platform-specific field mapping
-  - Automated translation placeholders
-  - Validation of required fields
-  - Excel output format
-  - Error handling and reporting
+#### `transformer.py`
+- **MultimarketplaceTransformer**: Transforms master template into platform-specific files
+- **Methods**: `generate_platform_file()`, `validate_required_fields()`, `save_platform_file()`
+
+### Configuration (`src/config/`)
+
+#### `platforms.py`
+- **PlatformConfig**: Configuration class for marketplace platforms
+- **PLATFORM_CONFIGS**: Dictionary of all platform configurations
+- **LANGUAGE_MAPPING**: Language codes for each platform
+
+#### `settings.py`
+- **File paths**: Centralized path management
+- **Settings**: Global configuration constants
+- **Validation**: Path and file existence checks
+
+### Utilities (`src/utils/`)
+
+#### `translation.py`
+- **translate_content()**: Main translation function (placeholder)
+- **TranslationService**: Base class for translation services
+- **GoogleTranslateService**: Google Translate API integration
+- **DeepLService**: DeepL API integration
 
 ## 📋 Master Template Structure
 
-The master template contains 269 columns organized into categories:
+The master template contains **269 columns** organized into categories with color coding:
+
+### 🎨 Color Coding System
+- **🔴 Red**: Required fields (Category Code, EAN, Brand, Code for internal use, Description, etc.)
+- **🟢 Green**: Automated fields (translations, additional images)
+- **🟡 Yellow**: Optional fields (technical specs, compliance, marketing content)
+
+### 📊 Template Features
+- **Excel Format**: Easy to edit and navigate
+- **Logical Ordering**: Related fields grouped together
+- **Visual Guidance**: Color coding shows field priorities
+- **Auto-width**: Columns sized for optimal readability
 
 ### Core Product Information
 - Basic details (EAN, Brand, Name, Category)
@@ -131,15 +177,32 @@ graph TD
 ## 🛠️ Customization
 
 ### Adding New Marketplaces
-1. Add platform configuration to `transform_pipeline.py`
-2. Define required fields and language mappings
-3. Specify output filename and column requirements
+
+1. **Add platform configuration** in `src/config/platforms.py`:
+```python
+'new_platform': PlatformConfig(
+    name='New Platform',
+    required_fields=['EAN', 'Brand', 'Name'],
+    language_fields={
+        'title': 'Product Title',
+        'description': 'Description',
+    },
+    image_fields=['Image 1', 'Image 2'],
+    output_filename='New_Platform_generated.xlsx'
+)
+```
+
+2. **Add language mapping**:
+```python
+LANGUAGE_MAPPING['new_platform'] = 'en'
+```
 
 ### Translation Integration
-The system includes placeholder translation functions. To integrate real translation services:
+
+Replace the placeholder translation function in `src/utils/translation.py`:
 
 ```python
-def translate_content(self, text: str, target_language: str) -> str:
+def translate_content(text: str, target_language: str) -> str:
     # Replace with actual translation API calls
     # - Google Translate API
     # - DeepL API
@@ -149,15 +212,25 @@ def translate_content(self, text: str, target_language: str) -> str:
 ```
 
 ### Validation Rules
-Add platform-specific validation in `validate_required_fields()` method.
+
+Add platform-specific validation in `src/core/transformer.py`:
+
+```python
+def validate_required_fields(self, df: pd.DataFrame, platform: str) -> List[str]:
+    # Add custom validation logic
+    pass
+```
 
 ## 📈 Benefits
 
-- **Single Source of Truth**: One template for all marketplaces
-- **Efficiency**: Fill once, generate multiple platform files
-- **Consistency**: Standardized data across all marketplaces
-- **Scalability**: Easy to add new marketplaces
-- **Quality Control**: Centralized validation and error handling
+- **Modular Design**: Clean separation of concerns
+- **Maintainability**: Easy to find and modify code
+- **Testability**: Clear structure for unit tests
+- **Scalability**: Easy to add new features
+- **Documentation**: Organized documentation structure
+- **Data Management**: Clear separation of input/output data
+- **Configuration**: Centralized platform configurations
+- **Reusability**: Modular code structure
 
 ## 🔍 Quality Assurance
 
@@ -176,16 +249,34 @@ Add platform-specific validation in `validate_required_fields()` method.
 ## 📝 Usage Instructions
 
 ### For Clients
-1. **Populate the master template** with English content and core product details
-2. **Run the transformation pipeline** to generate platform-specific files
-3. **Review generated files** for accuracy and completeness
-4. **Upload to respective marketplaces**
+1. **Populate** the master template with English content and core product details
+2. **Run** `python main.py transform` to generate platform files
+3. **Review** generated files for accuracy
+4. **Upload** to respective marketplaces
 
 ### For Developers
-1. **Extend platform configurations** in `transform_pipeline.py`
-2. **Integrate translation services** for automated language conversion
-3. **Add validation rules** for data quality assurance
+1. **Extend platform configurations** in `src/config/platforms.py`
+2. **Integrate translation services** in `src/utils/translation.py`
+3. **Add validation rules** in `src/core/transformer.py`
 4. **Implement monitoring** for pipeline performance
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test modules
+pytest tests/test_extractor.py
+pytest tests/test_transformer.py
+pytest tests/test_validator.py
+```
+
+## 📚 Documentation
+
+- **API Documentation**: See `docs/API.md`
+- **Platform Guides**: See `docs/PLATFORMS.md`
+- **Deployment Guide**: See `docs/DEPLOYMENT.md`
 
 ## 🔮 Future Enhancements
 
@@ -209,4 +300,4 @@ For questions or issues:
 
 **Status**: ✅ Production Ready  
 **Last Updated**: December 2024  
-**Version**: 1.0.0 
+**Version**: 2.0.0 

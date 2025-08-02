@@ -152,7 +152,6 @@ COLUMN_ORDER = [
     'Product type',
     'Material',
     'Colour',
-    'Main Color',
     'Main Material',
     
     # Images
@@ -227,26 +226,23 @@ class TemplateOptimizer:
         return df
     
     def restructure_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Restructure columns in the desired order."""
-        # Get all columns from the original template
+        """Restructure columns in the desired order, keeping only unified color field."""
         all_columns = list(df.columns)
-        
-        # Create new column order
-        new_order = []
-        
+        # Remove all color variants except 'Colour'
+        color_variants = ['Main Color']
+        for variant in color_variants:
+            if variant in all_columns:
+                all_columns.remove(variant)
         # Add columns in the specified order
+        new_order = []
         for col in COLUMN_ORDER:
             if col in all_columns:
                 new_order.append(col)
                 all_columns.remove(col)
-        
         # Add remaining columns at the end
         new_order.extend(all_columns)
-        
-        # Reorder the dataframe
         df_reordered = df[new_order]
-        
-        logger.info(f"Restructured template with {len(df_reordered.columns)} columns")
+        logger.info(f"Restructured template with {len(df_reordered.columns)} columns (unified color field)")
         return df_reordered
     
     def create_xlsx_template(self, df: pd.DataFrame, output_path: Path) -> bool:

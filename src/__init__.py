@@ -1,0 +1,2 @@
+"""Simple multimarketplace product transformer."""
+

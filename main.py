@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.transformer import generate_platform_file
+from src.translator import translate_input_file
 from src.config import PLATFORMS
 
 # Configure logging
@@ -21,6 +22,24 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+def translate(input_file: str):
+    """
+    Translate empty language fields in input file from English version.
+    
+    Args:
+        input_file: Input filename (e.g., 'acoustic_panels.xlsx')
+    """
+    print(f"🌐 Translating {input_file}...")
+    print("=" * 60)
+    
+    success = translate_input_file(input_file)
+    
+    if success:
+        print(f"\n✅ Translation complete for {input_file}")
+    else:
+        print(f"\n❌ Translation failed")
 
 
 def transform(platform: str, input_file: str):
@@ -62,12 +81,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python main.py translate --input acoustic_panels.xlsx
   python main.py transform --platform castorama_fr --input acoustic_panels.xlsx
   python main.py list-platforms
         """
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
+    
+    # Translate command
+    translate_parser = subparsers.add_parser('translate', help='Translate empty language fields in input file')
+    translate_parser.add_argument(
+        '--input',
+        required=True,
+        help='Input filename (e.g., acoustic_panels.xlsx)'
+    )
     
     # Transform command
     transform_parser = subparsers.add_parser('transform', help='Transform input to platform file')
@@ -87,7 +115,9 @@ Examples:
     
     args = parser.parse_args()
     
-    if args.command == 'transform':
+    if args.command == 'translate':
+        translate(args.input)
+    elif args.command == 'transform':
         transform(args.platform, args.input)
     elif args.command == 'list-platforms':
         list_platforms()

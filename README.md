@@ -94,12 +94,54 @@ Example:
 ## Commands
 
 ```bash
+# Translate empty language fields in input file
+python main.py translate --input acoustic_panels.xlsx
+
 # Transform input to platform file
 python main.py transform --platform castorama_fr --input acoustic_panels.xlsx
 
 # List supported platforms
 python main.py list-platforms
 ```
+
+## Translation Feature
+
+The system includes automatic translation using DeepL API:
+
+1. **Setup DeepL API Key**:
+   - Set environment variable: `export DEEPL_API_KEY=your_key_here`
+   - Or create `.env` file with: `DEEPL_API_KEY=your_key_here` or `DEEPL_key=your_key_here`
+
+2. **Input File Structure**:
+   - Add language-specific columns: `title_en`, `title_fr`, `title_it`, `description_en`, `description_fr`, etc.
+   - Fill in English versions (`title_en`, `description_en`)
+   - Leave other languages empty if you want them auto-translated
+   - Fill manually if you have custom translations
+
+3. **Translation Logic**:
+   - Only translates empty fields (won't overwrite existing translations)
+   - Requires English version (`title_en`, `description_en`) to exist
+   - Translates from English to all other empty language fields
+   - Supported languages: en, fr, it, es, de, nl, pl, pt
+
+4. **Usage**:
+   ```bash
+   # Step 1: Translate (fills empty language fields)
+   python main.py translate --input acoustic_panels.xlsx
+   
+   # Step 2: Transform to platform files
+   python main.py transform --platform castorama_fr --input acoustic_panels.xlsx
+   ```
+
+**Example Input File:**
+| title_en | title_fr | title_it | description_en | description_fr |
+|---------|---------|---------|----------------|----------------|
+| Acoustic Panel | (empty) | (empty) | High quality panel | (empty) |
+
+After translation:
+| title_en | title_fr | title_it | description_en | description_fr |
+|---------|---------|---------|----------------|----------------|
+| Acoustic Panel | Panneau Acoustique | Pannello Acustico | High quality panel | Panneau de haute qualité |
 
 ## Design Principles
 

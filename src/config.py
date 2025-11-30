@@ -31,6 +31,8 @@ REF_TEMPLATES = {
 MAPPING_FILE = CONFIG_DIR / 'mapping.xlsx'
 ATTRIBUTES_FILE = CONFIG_DIR / 'attributes.xlsx'
 
+# DeepL API key (can be set via environment variable DEEPL_API_KEY or in .env file as DEEPL_key)
+
 def get_output_file_path(platform: str) -> Path:
     """Get output file path for a platform."""
     platform_names = {

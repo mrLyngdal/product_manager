@@ -4,9 +4,10 @@ Maps input data to platform-specific Excel files based on mapping configuration.
 """
 
 import pandas as pd
+import shutil
 import openpyxl
 from openpyxl import load_workbook
-from openpyxl.utils import get_column_letter, column_index_from_string
+from openpyxl.utils import column_index_from_string
 from pathlib import Path
 from typing import Dict, List, Optional
 import logging
@@ -131,31 +132,32 @@ def load_input(input_file: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def load_reference_template(platform: str) -> Optional[openpyxl.Workbook]:
+def copy_reference_template(platform: str, output_path: Path) -> bool:
     """
-    Load reference template for a platform preserving exact structure.
+    Copy reference template exactly to output location.
     
     Args:
         platform: Platform identifier (e.g., 'castorama_fr')
+        output_path: Path where output file should be saved
     
     Returns:
-        openpyxl Workbook object with all sheets, formatting, etc., or None if not found
+        True if successful, False otherwise
     """
     try:
         ref_path = REF_TEMPLATES.get(platform)
         if not ref_path or not ref_path.exists():
             logger.error(f"Reference template not found for {platform}: {ref_path}")
-            return None
+            return False
         
-        # Load workbook preserving all formatting, sheets, etc.
-        wb = load_workbook(ref_path)
+        # Copy reference template exactly to output location
+        shutil.copy2(ref_path, output_path)
         
-        logger.info(f"Loaded reference template for {platform} with {len(wb.sheetnames)} sheet(s)")
-        return wb
+        logger.info(f"Copied reference template for {platform} to {output_path}")
+        return True
         
     except Exception as e:
-        logger.error(f"Error loading reference template for {platform}: {e}")
-        return None
+        logger.error(f"Error copying reference template for {platform}: {e}")
+        return False
 
 
 def transform_product(
@@ -207,6 +209,15 @@ def transform_product(
             # Get value from input file (product row)
             if attribute in product_row.index and pd.notna(product_row[attribute]):
                 value = product_row[attribute]
+            else:
+                # Handle typo: mapping might have 'desciption_fr' but input has 'description_fr'
+                # Try alternative spelling
+                if attribute == 'desciption_fr' and 'description_fr' in product_row.index:
+                    if pd.notna(product_row['description_fr']):
+                        value = product_row['description_fr']
+                elif attribute == 'description_fr' and 'desciption_fr' in product_row.index:
+                    if pd.notna(product_row['desciption_fr']):
+                        value = product_row['desciption_fr']
         
         # Skip if no value found
         if value is None:
@@ -218,9 +229,31 @@ def transform_product(
     return result
 
 
+def column_letter_to_index(column_letter: str) -> int:
+    """
+    Convert Excel column letter (e.g., 'A', 'BM', 'AA') to 0-based index.
+    
+    Args:
+        column_letter: Excel column letter(s)
+    
+    Returns:
+        0-based column index
+    """
+    column_letter = column_letter.upper().strip()
+    result = 0
+    for char in column_letter:
+        result = result * 26 + (ord(char) - ord('A') + 1)
+    return result - 1  # Convert to 0-based
+
+
 def generate_platform_file(platform: str, input_file: str) -> Optional[Path]:
     """
-    Generate platform-specific output file, preserving exact structure from reference template.
+    Generate platform-specific output file by copying reference template and inserting values.
+    
+    Simple approach:
+    1. Copy reference template exactly to output (preserves all formatting)
+    2. Use openpyxl to write values directly to cells (product 1 = row 3, headers = rows 1-2)
+    3. Insert values based on mapping
     
     Args:
         platform: Platform identifier
@@ -234,33 +267,37 @@ def generate_platform_file(platform: str, input_file: str) -> Optional[Path]:
         mapping = load_mapping()
         attributes = load_attributes()
         input_df = load_input(input_file)
-        ref_wb = load_reference_template(platform)
-        
-        if ref_wb is None:
-            logger.error(f"Cannot generate file for {platform}: reference template not found")
-            return None
         
         if input_df.empty:
             logger.warning(f"No input data to transform")
             return None
         
-        # Get the active sheet (first sheet, or you can specify which sheet to use)
-        ws = ref_wb.active
+        # Get output path
+        output_path = get_output_file_path(platform)
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Find the last row with data (to know where to start adding new rows)
-        # Usually row 1 is headers, row 2+ is data
-        last_data_row = 1
-        for row in range(2, ws.max_row + 1):
+        # Step 1: Copy reference template exactly to output (preserves formatting)
+        if not copy_reference_template(platform, output_path):
+            return None
+        
+        # Step 2: Load with openpyxl to preserve formatting
+        wb = load_workbook(output_path)
+        ws = wb.active  # Work with first sheet
+        
+        # Step 3: Find and clear existing data rows (keep headers in rows 1-2)
+        # Find last row with data
+        last_data_row = 2  # Start after header rows (1 and 2)
+        for row in range(3, ws.max_row + 1):
             if any(cell.value is not None for cell in ws[row]):
                 last_data_row = row
         
-        # Clear existing data rows (keep header row at row 1)
-        # Delete rows from 2 to last_data_row
-        if last_data_row > 1:
-            ws.delete_rows(2, last_data_row - 1)
+        # Delete existing data rows (keep rows 1-2 as headers)
+        if last_data_row > 2:
+            ws.delete_rows(3, last_data_row - 2)
         
-        # Transform each product and add to worksheet
-        next_row = 2  # Start after header row
+        # Step 4: Transform each product and write directly to cells
+        # Product 1 starts at row 3 (rows 1-2 are headers)
+        next_row = 3
         for idx, product_row in input_df.iterrows():
             # Get column mappings for this product (returns {column_letter: value})
             column_values = transform_product(product_row, platform, mapping, attributes)
@@ -272,24 +309,35 @@ def generate_platform_file(platform: str, input_file: str) -> Optional[Path]:
                     column_values[shop_sku_col] = product_row['ean']
                     logger.debug(f"Auto-mapped EAN to shop_sku column {shop_sku_col}")
             
-            # Write values to the correct columns
+            # Handle typo: mapping has 'desciption_fr' but input might have 'description_fr'
+            # Check if desciption_fr is mapped but description_fr exists in input
+            if 'desciption_fr' in mapping and platform in mapping['desciption_fr']['columns']:
+                desciption_col = mapping['desciption_fr']['columns'][platform]
+                # Try both spellings
+                if 'description_fr' in product_row.index and pd.notna(product_row['description_fr']):
+                    column_values[desciption_col] = product_row['description_fr']
+                elif 'desciption_fr' in product_row.index and pd.notna(product_row['desciption_fr']):
+                    column_values[desciption_col] = product_row['desciption_fr']
+            
+            # Write values directly to cells (preserves formatting from reference template)
             for col_letter, value in column_values.items():
                 try:
-                    # Convert column letter to column index (1-based for openpyxl)
+                    # Convert Excel column letter to 1-based column index (openpyxl uses 1-based)
                     col_idx = column_index_from_string(col_letter)
-                    # Write value to cell
-                    ws.cell(row=next_row, column=col_idx, value=value)
+                    
+                    # Write value to cell (this preserves cell formatting from reference template)
+                    cell = ws.cell(row=next_row, column=col_idx)
+                    cell.value = value
+                    
                 except Exception as e:
                     logger.warning(f"Error writing to column {col_letter} at row {next_row}: {e}")
             
             next_row += 1
         
-        # Save output file (preserves all formatting, sheets, etc.)
-        output_path = get_output_file_path(platform)
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        ref_wb.save(output_path)
+        # Step 5: Save workbook (preserves all formatting, sheets, etc.)
+        wb.save(output_path)
         
-        logger.info(f"Generated {output_path} with {next_row - 2} product rows")
+        logger.info(f"Generated {output_path} with {next_row - 3} product rows")
         return output_path
         
     except Exception as e:
